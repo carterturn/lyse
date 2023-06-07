@@ -14,6 +14,7 @@ splash.show()
 
 splash.update_text('importing standard library modules')
 # stdlib imports
+import ast
 import sys
 import logging
 import threading
@@ -281,10 +282,11 @@ class LyseMainWindow(QtWidgets.QMainWindow):
 
 class AnalysisRoutine(object):
 
-    def __init__(self, filepath, model, output_box_port, checked=QtCore.Qt.Checked):
+    def __init__(self, filepath, model, output_box_port, globals_model=None, checked=QtCore.Qt.Checked):
         self.filepath = filepath
         self.shortname = os.path.basename(self.filepath)
         self.model = model
+        self.globals_model = globals_model
         self.output_box_port = output_box_port
         
         self.COL_ACTIVE = RoutineBox.COL_ACTIVE
@@ -306,9 +308,61 @@ class AnalysisRoutine(object):
         name_item.setToolTip(self.filepath)
         name_item.setData(self.filepath, self.ROLE_FULLPATH)
         self.model.appendRow([active_item, info_item, name_item])
+
+        self.setup_globals_entry()
             
         self.exiting = False
-        
+
+    def setup_globals_entry(self):
+        routine_globals = {}
+
+        # Load globals from script into dictionary
+        with open(self.filepath, 'r') as script_file:
+            script = script_file.read()
+            script_tree = ast.parse(script)
+            setup_globals_func = None
+            for func in [f for f in script_tree.body if isinstance(f, ast.FunctionDef)]:
+                if func.name == 'SETUP_GLOBALS':
+                    setup_globals_func = func
+            if setup_globals_func is not None:
+                try:
+                    setup_globals_script = ast.unparse(setup_globals_func) + '\nSETUP_GLOBALS()'
+                    setup_globals_code = compile(setup_globals_script, self.filepath, 'exec')
+                    exec(setup_globals_code, routine_globals)
+                except Exception:
+                    app.output_box.output('Unable to execute SETUP_GLOBALS for \n'%self.shortname, red=True)
+        # Don't load "private" variables (or builtins)
+        rm_keys = ['SETUP_GLOBALS']
+        for key in routine_globals.keys():
+            if key.startswith('_'):
+                rm_keys.append(key)
+        for key in rm_keys:
+            routine_globals.pop(key)
+
+        # Populate globals model
+        self.file_name_item = QtGui.QStandardItem(self.shortname)
+        self.file_name_item.setEditable(False)
+        self.file_name_item.setToolTip(self.filepath)
+        self.file_name_item.setData(self.shortname, app.GLOBALS_ROLE_SORT_DATA)
+
+        self.globals_model.appendRow([self.file_name_item, None, None])
+
+        for global_name, global_value in routine_globals.items():
+            global_name_item = QtGui.QStandardItem(global_name)
+            global_name_item.setData(global_name, app.GLOBALS_ROLE_PREVIOUS_NAME)
+            global_name_item.setEditable(False)
+
+            global_value_item = QtGui.QStandardItem(repr(global_value))
+            global_value_item.setData(repr(global_value), app.GLOBALS_ROLE_PREVIOUS_NAME)
+            global_value_item.setEditable(True)
+
+            global_unit_item = QtGui.QStandardItem()
+            global_unit_item.setEditable(True)
+
+            self.file_name_item.appendRow([global_name_item, global_value_item, global_unit_item])
+
+        app.ui.treeView_globals.setExpanded(self.file_name_item.index(), True)
+
     def start_worker(self):
         # Start a worker process for this analysis routine:
         worker_path = os.path.join(LYSE_DIR, 'analysis_subprocess.py')
@@ -325,7 +379,15 @@ class AnalysisRoutine(object):
         return to_worker, from_worker, worker
         
     def do_analysis(self, filepath):
-        self.to_worker.put(['analyse', filepath])
+        globals = {}
+        for idx in range(0, self.file_name_item.rowCount()):
+            global_name = self.file_name_item.child(idx, app.GLOBALS_COL_NAME).text()
+            try:
+                global_value = eval(self.file_name_item.child(idx, app.GLOBALS_COL_VALUE).text())
+            except Exception:
+                global_value = None
+            globals[global_name] = global_value
+        self.to_worker.put(['analyse', (filepath, globals)])
         signal, data = self.from_worker.get()
         if signal == 'error':
             return False, data
@@ -488,13 +550,14 @@ class RoutineBox(object):
     # using remove/insert.
     ROLE_SORTINDEX = QtCore.Qt.UserRole + 2
     
-    def __init__(self, container, exp_config, filebox, from_filebox, to_filebox, output_box_port, multishot=False):
+    def __init__(self, container, exp_config, filebox, from_filebox, to_filebox, output_box_port, globals_model, multishot=False):
         self.multishot = multishot
         self.filebox = filebox
         self.exp_config = exp_config
         self.from_filebox = from_filebox
         self.to_filebox = to_filebox
         self.output_box_port = output_box_port
+        self.globals_model = globals_model
         
         self.logger = logging.getLogger('lyse.RoutineBox.%s'%('multishot' if multishot else 'singleshot'))  
         
@@ -612,7 +675,7 @@ class RoutineBox(object):
             if filepath in [routine.filepath for routine in self.routines]:
                 app.output_box.output('Warning: Ignoring duplicate analysis routine %s\n'%filepath, red=True)
                 continue
-            routine = AnalysisRoutine(filepath, self.model, self.output_box_port, checked)
+            routine = AnalysisRoutine(filepath, self.model, self.output_box_port, self.globals_model, checked)
             self.routines.append(routine)
         self.update_select_all_checkstate()
         
@@ -1934,6 +1997,16 @@ class FileBox(object):
         
 class Lyse(object):
 
+    # Constants for the model in the globals tab:
+    GLOBALS_COL_NAME = 0
+    GLOBALS_COL_VALUE = 1
+    GLOBALS_COL_UNITS = 2
+    GLOBALS_ROLE_IS_DUMMY_ROW = QtCore.Qt.UserRole + 1
+    GLOBALS_ROLE_PREVIOUS_NAME = QtCore.Qt.UserRole + 2
+    GLOBALS_ROLE_SORT_DATA = QtCore.Qt.UserRole + 3
+    GLOBALS_ROLE_GROUP_IS_OPEN = QtCore.Qt.UserRole + 4
+    GLOBALS_DUMMY_ROW_TEXT = '<Click to add group>'
+
     def __init__(self):
         splash.update_text('loading graphical interface')
         loader = UiLoader()
@@ -1953,11 +2026,13 @@ class Lyse(object):
         to_multishot = queue.Queue()
         from_multishot = queue.Queue()
 
-        self.output_box = OutputBox(self.ui.verticalLayout_output_box)
+        self.setup_globals_tab()
+
+        self.output_box = OutputBox(self.ui.verticalLayout_output_tab)
         self.singleshot_routinebox = RoutineBox(self.ui.verticalLayout_singleshot_routinebox, self.exp_config,
-                                                self, to_singleshot, from_singleshot, self.output_box.port)
+                                                self, to_singleshot, from_singleshot, self.output_box.port, self.globals_model)
         self.multishot_routinebox = RoutineBox(self.ui.verticalLayout_multishot_routinebox, self.exp_config,
-                                               self, to_multishot, from_multishot, self.output_box.port, multishot=True)
+                                               self, to_multishot, from_multishot, self.output_box.port, self.globals_model, multishot=True)
         self.filebox = FileBox(self.ui.verticalLayout_filebox, self.exp_config,
                                to_singleshot, from_singleshot, to_multishot, from_multishot)
 
@@ -2012,6 +2087,40 @@ class Lyse(object):
 
         self.ui.show()
         # self.ui.showMaximized()
+
+    def setup_globals_tab(self):
+        self.globals_model = QtGui.QStandardItemModel()
+        self.globals_model.setHorizontalHeaderLabels(['Routine/global name', 'Value', 'Units'])
+        self.globals_model.setSortRole(self.GLOBALS_ROLE_SORT_DATA)
+        self.ui.treeView_globals.setModel(self.globals_model)
+        self.ui.treeView_globals.setAnimated(True)  # Pretty
+        self.ui.treeView_globals.setSelectionMode(QtWidgets.QTreeView.ExtendedSelection)
+        self.ui.treeView_globals.setSortingEnabled(True)
+        self.ui.treeView_globals.sortByColumn(self.GLOBALS_COL_NAME, QtCore.Qt.AscendingOrder)
+        # Set column widths:
+        self.ui.treeView_globals.setColumnWidth(self.GLOBALS_COL_NAME, 200)
+        self.ui.treeView_globals.setColumnWidth(self.GLOBALS_COL_VALUE, 200)
+        self.ui.treeView_globals.setColumnWidth(self.GLOBALS_COL_UNITS, 100)
+        # Make it so the user can just start typing on an item to edit:
+        self.ui.treeView_globals.setEditTriggers(QtWidgets.QTreeView.AnyKeyPressed |
+                                                 QtWidgets.QTreeView.EditKeyPressed |
+                                                 QtWidgets.QTreeView.SelectedClicked)
+        # Ensure the clickable region of the open/close button doesn't extend forever:
+        self.ui.treeView_globals.header().setStretchLastSection(False)
+        # Stretch the filpath/groupname column to fill available space:
+        self.ui.treeView_globals.header().setSectionResizeMode(
+            self.GLOBALS_COL_NAME, QtWidgets.QHeaderView.Stretch
+        )
+
+        self.ui.treeView_globals.setTextElideMode(QtCore.Qt.ElideMiddle)
+        # Setup stuff for a custom context menu:
+        self.ui.treeView_globals.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+
+        # A counter for keeping track of the recursion depth of
+        # self._globals_model_active_changed(). This is used so that some
+        # actions can be taken in response to initial data changes, but not to
+        # flow-on changes made by the method itself:
+        self.on_globals_model_active_changed_recursion_depth = 0
 
     def terminate_all_workers(self):
         for routine in self.singleshot_routinebox.routines + self.multishot_routinebox.routines:

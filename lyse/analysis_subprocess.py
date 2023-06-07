@@ -271,8 +271,9 @@ class AnalysisWorker(object):
                 if task == 'quit':
                     inmain(qapplication.quit)
                 elif task == 'analyse':
-                    path = data
-                    success = self.do_analysis(path)
+                    path = data[0]
+                    globals = data[1]
+                    success = self.do_analysis(path, globals)
                     if success:
                         if lyse._delay_flag:
                             lyse.delay_event.wait()
@@ -283,7 +284,7 @@ class AnalysisWorker(object):
                     self.to_parent.put(['error','invalid task %s'%str(task)])
         
     @inmain_decorator()
-    def do_analysis(self, path):
+    def do_analysis(self, path, globals=None):
         now = time.strftime('[%x %X]')
         if path is not None:
             print('%s %s %s ' %(now, os.path.basename(self.filepath), os.path.basename(path)))
@@ -295,6 +296,8 @@ class AnalysisWorker(object):
         # Reset the routine module's namespace:
         self.routine_module.__dict__.clear()
         self.routine_module.__dict__.update(self.routine_module_clean_dict)
+        if globals:
+            self.routine_module.__dict__.update(globals)
 
         # Use lyse.path instead:
         lyse.path = path
