@@ -394,7 +394,7 @@ class AnalysisRoutine(object):
             try:
                 if self.file_name_item.child(idx, app.GLOBALS_COL_UNITS).text() == 'list':
                     global_value_item = self.file_name_item.child(idx, app.GLOBALS_COL_VALUE)
-                    global_value = app.ui.treeView_globals.indexWidget(global_value_item.index())
+                    global_value = app.ui.treeView_globals.indexWidget(global_value_item.index()).currentText()
                 else:
                     global_value = eval(self.file_name_item.child(idx, app.GLOBALS_COL_VALUE).text())
             except Exception:
