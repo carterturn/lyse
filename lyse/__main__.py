@@ -361,6 +361,15 @@ class AnalysisRoutine(object):
 
             self.file_name_item.appendRow([global_name_item, global_value_item, global_unit_item])
 
+            if isinstance(global_value, list):
+                combo_box = QtWidgets.QComboBox()
+                value_list = [str(v) for v in global_value]
+                combo_box.addItems(value_list)
+                combo_box.setCurrentIndex(0)
+                app.ui.treeView_globals.setIndexWidget(global_value_item.index(), combo_box)
+                global_unit_item.setData('list', app.GLOBALS_ROLE_PREVIOUS_NAME)
+                global_unit_item.setEditable(False)
+
         app.ui.treeView_globals.setExpanded(self.file_name_item.index(), True)
 
     def start_worker(self):
@@ -383,7 +392,11 @@ class AnalysisRoutine(object):
         for idx in range(0, self.file_name_item.rowCount()):
             global_name = self.file_name_item.child(idx, app.GLOBALS_COL_NAME).text()
             try:
-                global_value = eval(self.file_name_item.child(idx, app.GLOBALS_COL_VALUE).text())
+                if self.file_name_item.child(idx, app.GLOBALS_COL_UNITS).text() == 'list':
+                    global_value_item = self.file_name_item.child(idx, app.GLOBALS_COL_VALUE)
+                    global_value = app.ui.treeView_globals.indexWidget(global_value_item.index())
+                else:
+                    global_value = eval(self.file_name_item.child(idx, app.GLOBALS_COL_VALUE).text())
             except Exception:
                 global_value = None
             globals[global_name] = global_value
