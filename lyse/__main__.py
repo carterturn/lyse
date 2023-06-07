@@ -367,7 +367,7 @@ class AnalysisRoutine(object):
                 combo_box.addItems(value_list)
                 combo_box.setCurrentIndex(0)
                 app.ui.treeView_globals.setIndexWidget(global_value_item.index(), combo_box)
-                global_unit_item.setData('list', app.GLOBALS_ROLE_PREVIOUS_NAME)
+                global_unit_item.setText('list')
                 global_unit_item.setEditable(False)
 
         app.ui.treeView_globals.setExpanded(self.file_name_item.index(), True)
