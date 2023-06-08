@@ -464,6 +464,7 @@ class AnalysisRoutine(object):
             # Already gone
             return
         self.model.removeRow(index)
+        self.globals_model.removeRow(self.file_name_item.index().row())
          
     def end_child(self, restart=False):
         self.to_worker.put(['quit', None])
