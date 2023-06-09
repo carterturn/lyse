@@ -266,17 +266,29 @@ QToolButton:hover:checked {
    <property name="text">
     <string>Save configuration</string>
    </property>
+  </action>
+  <action name="actionNew_dataframe">
+   <property name="icon">
+    <iconset>
+	<normaloff>:/qtutils/fugue/blue-folder-open.png</normaloff>:/qtutils/fugue/blue-folder-open.png</iconset>
+   </property>
+   <property name="text">
+    <string>New dataframe</string>
+   </property>
    <property name="shortcut">
-    <string>Ctrl+S</string>
+    <string>Ctrl+N</string>
    </property>
   </action>
   <action name="actionSave_dataframe">
    <property name="icon">
     <iconset>
-     <normaloff>:/qtutils/fugue/disk.png</normaloff>:/qtutils/fugue/disk.png</iconset>
+     <normaloff>:/qtutils/fugue/disk-share.png</normaloff>:/qtutils/fugue/disk-share.png</iconset>
    </property>
    <property name="text">
     <string>Save dataframe</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="actionSave_dataframe_as">
@@ -291,7 +303,7 @@ QToolButton:hover:checked {
   <action name="actionLoad_dataframe">
    <property name="icon">
     <iconset>
-     <normaloff>:/qtutils/fugue/folder-open.png</normaloff>:/qtutils/fugue/folder-open.png</iconset>
+     <normaloff>:/qtutils/fugue/blue-folder-open-table.png</normaloff>:/qtutils/fugue/blue-folder-open-table.png</iconset>
    </property>
    <property name="text">
     <string>Load dataframe</string>

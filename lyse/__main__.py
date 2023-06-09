@@ -2031,6 +2031,8 @@ class Lyse(object):
         self.setup_config()
         self.port = int(self.exp_config.get('ports', 'lyse'))
 
+        self.dataframe_file = 'default.pkl'
+
         # The singleshot routinebox will be connected to the filebox
         # by queues:
         to_singleshot = queue.Queue()
@@ -2057,6 +2059,7 @@ class Lyse(object):
         self.ui.actionRevert_configuration.triggered.connect(self.on_revert_configuration_triggered)
         self.ui.actionSave_configuration.triggered.connect(self.on_save_configuration_triggered)
         self.ui.actionSave_configuration_as.triggered.connect(self.on_save_configuration_as_triggered)
+        self.ui.actionNew_dataframe_as.triggered.connect(self.on_new_dataframe_triggered)
         self.ui.actionSave_dataframe_as.triggered.connect(lambda: self.on_save_dataframe_triggered(True))
         self.ui.actionSave_dataframe.triggered.connect(lambda: self.on_save_dataframe_triggered(False))
         self.ui.actionLoad_dataframe.triggered.connect(self.on_load_dataframe_triggered)
@@ -2361,6 +2364,12 @@ class Lyse(object):
         QtWidgets.QShortcut('Del', self.ui, lambda: self.delete_items(True))
         QtWidgets.QShortcut('Shift+Del', self.ui, lambda: self.delete_items(False))
 
+    def on_new_dataframe_triggered(self):
+        filename, confirm = QtWidgets.QInputDialog.getText(self, 'Start new dataframe file',
+                                                           'Dataframe file name', text='dataframe.pkl')
+        if confirm:
+            self.dataframe_file = filename
+
     def on_save_dataframe_triggered(self, choose_folder=True):
         df = self.filebox.shots_model.dataframe.copy()
         if len(df) > 0:
@@ -2372,18 +2381,9 @@ class Lyse(object):
                 if not save_path:
                     # User cancelled
                     return
-            sequences = df.sequence.unique()
-            for sequence in sequences:
-                sequence_df = pandas.DataFrame(df[df['sequence'] == sequence], columns=df.columns).dropna(axis=1, how='all')
-                labscript = sequence_df['labscript'].iloc[0]
-                filename = "dataframe_{}_{}.pkl".format(sequence.to_pydatetime().strftime("%Y%m%dT%H%M%S"),labscript[:-3])
-                if not choose_folder:
-                    save_path = os.path.dirname(sequence_df['filepath'].iloc[0])
-                sequence_df.infer_objects()
-                for col in sequence_df.columns :
-                    if sequence_df[col].dtype == object:
-                        sequence_df[col] = pandas.to_numeric(sequence_df[col], errors='ignore')
-                sequence_df.to_pickle(os.path.join(save_path, filename))
+            if not choose_folder:
+                save_path = os.path.dirname(df['filepath'].iloc[0])
+            sequence_df.to_pickle(os.path.join(save_path, self.dataframe_file))
         else:
             error_dialog('Dataframe is empty')
 
