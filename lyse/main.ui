@@ -211,6 +211,7 @@ QToolButton:hover:checked {
     <addaction name="actionSave_configuration"/>
     <addaction name="actionSave_configuration_as"/>
     <addaction name="separator"/>
+    <addaction name="actionNew_dataframe"/>
     <addaction name="actionSave_dataframe"/>
     <addaction name="actionSave_dataframe_as"/>
     <addaction name="actionLoad_dataframe"/>
