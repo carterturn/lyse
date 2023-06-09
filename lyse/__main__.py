@@ -2059,7 +2059,7 @@ class Lyse(object):
         self.ui.actionRevert_configuration.triggered.connect(self.on_revert_configuration_triggered)
         self.ui.actionSave_configuration.triggered.connect(self.on_save_configuration_triggered)
         self.ui.actionSave_configuration_as.triggered.connect(self.on_save_configuration_as_triggered)
-        self.ui.actionNew_dataframe_as.triggered.connect(self.on_new_dataframe_triggered)
+        self.ui.actionNew_dataframe.triggered.connect(self.on_new_dataframe_triggered)
         self.ui.actionSave_dataframe_as.triggered.connect(lambda: self.on_save_dataframe_triggered(True))
         self.ui.actionSave_dataframe.triggered.connect(lambda: self.on_save_dataframe_triggered(False))
         self.ui.actionLoad_dataframe.triggered.connect(self.on_load_dataframe_triggered)
