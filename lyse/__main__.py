@@ -2382,7 +2382,7 @@ class Lyse(object):
                     # User cancelled
                     return
             if not choose_folder:
-                save_path = os.path.dirname(df['filepath'].iloc[0])
+                save_path = os.path.split(os.path.dirname(df['filepath'].iloc[0]))[0]
             df.to_pickle(os.path.join(save_path, self.dataframe_file))
         else:
             error_dialog('Dataframe is empty')
