@@ -2365,7 +2365,7 @@ class Lyse(object):
         QtWidgets.QShortcut('Shift+Del', self.ui, lambda: self.delete_items(False))
 
     def on_new_dataframe_triggered(self):
-        filename, confirm = QtWidgets.QInputDialog.getText(self, 'Start new dataframe file',
+        filename, confirm = QtWidgets.QInputDialog.getText(None, 'Start new dataframe file',
                                                            'Dataframe file name', text='dataframe.pkl')
         if confirm:
             self.dataframe_file = filename
