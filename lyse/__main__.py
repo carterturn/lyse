@@ -2017,7 +2017,6 @@ class Lyse(object):
     GLOBALS_COL_UNITS = 2
     GLOBALS_ROLE_PREVIOUS_NAME = QtCore.Qt.UserRole + 2
     GLOBALS_ROLE_SORT_DATA = QtCore.Qt.UserRole + 3
-    GLOBALS_ROLE_GROUP_IS_OPEN = QtCore.Qt.UserRole + 4
 
     def __init__(self):
         splash.update_text('loading graphical interface')
