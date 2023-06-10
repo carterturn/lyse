@@ -177,6 +177,9 @@ QToolButton:hover:checked {
 					</property>
 					<item>
 					  <widget class="QTreeView" name="treeView_globals">
+						<property name="styleSheet">
+						  <string notr="true"/>
+						</property>
 						<property name="alternatingRowColors">
 						  <bool>true</bool>
 						</property>

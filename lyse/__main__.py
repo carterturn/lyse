@@ -2015,11 +2015,9 @@ class Lyse(object):
     GLOBALS_COL_NAME = 0
     GLOBALS_COL_VALUE = 1
     GLOBALS_COL_UNITS = 2
-    GLOBALS_ROLE_IS_DUMMY_ROW = QtCore.Qt.UserRole + 1
     GLOBALS_ROLE_PREVIOUS_NAME = QtCore.Qt.UserRole + 2
     GLOBALS_ROLE_SORT_DATA = QtCore.Qt.UserRole + 3
     GLOBALS_ROLE_GROUP_IS_OPEN = QtCore.Qt.UserRole + 4
-    GLOBALS_DUMMY_ROW_TEXT = '<Click to add group>'
 
     def __init__(self):
         splash.update_text('loading graphical interface')
@@ -2119,9 +2117,7 @@ class Lyse(object):
         self.ui.treeView_globals.setColumnWidth(self.GLOBALS_COL_VALUE, 200)
         self.ui.treeView_globals.setColumnWidth(self.GLOBALS_COL_UNITS, 100)
         # Make it so the user can just start typing on an item to edit:
-        self.ui.treeView_globals.setEditTriggers(QtWidgets.QTreeView.AnyKeyPressed |
-                                                 QtWidgets.QTreeView.EditKeyPressed |
-                                                 QtWidgets.QTreeView.SelectedClicked)
+        self.ui.treeView_globals.setEditTriggers(QtWidgets.QTreeView.AllEditTriggers)
         # Ensure the clickable region of the open/close button doesn't extend forever:
         self.ui.treeView_globals.header().setStretchLastSection(False)
         # Stretch the filpath/groupname column to fill available space:
@@ -2132,12 +2128,6 @@ class Lyse(object):
         self.ui.treeView_globals.setTextElideMode(QtCore.Qt.ElideMiddle)
         # Setup stuff for a custom context menu:
         self.ui.treeView_globals.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-
-        # A counter for keeping track of the recursion depth of
-        # self._globals_model_active_changed(). This is used so that some
-        # actions can be taken in response to initial data changes, but not to
-        # flow-on changes made by the method itself:
-        self.on_globals_model_active_changed_recursion_depth = 0
 
     def terminate_all_workers(self):
         for routine in self.singleshot_routinebox.routines + self.multishot_routinebox.routines:
