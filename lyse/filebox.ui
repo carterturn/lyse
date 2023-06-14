@@ -230,6 +230,20 @@ QGroupBox
            </widget>
           </item>
           <item>
+           <widget class="QPushButton" name="pushButton_add_columns">
+            <property name="toolTip">
+             <string>Add a new (empty) column</string>
+            </property>
+            <property name="text">
+             <string>Add Column...</string>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>:/qtutils/fugue/table--plus.png</normaloff>:/qtutils/fugue/table--plus.png</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
            <spacer name="horizontalSpacer_2">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>

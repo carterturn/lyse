@@ -1775,6 +1775,7 @@ class FileBox(object):
 
     def connect_signals(self):
         self.ui.pushButton_edit_columns.clicked.connect(self.on_edit_columns_clicked)
+        self.ui.pushButton_add_columns.clicked.connect(self.on_add_columns_clicked)
         self.shots_model.columns_changed.connect(self.on_columns_changed)
         self.ui.toolButton_add_shots.clicked.connect(self.on_add_shot_files_clicked)
         self.ui.toolButton_remove_shots.clicked.connect(self.shots_model.on_remove_selection)
@@ -1785,6 +1786,31 @@ class FileBox(object):
         
     def on_edit_columns_clicked(self):
         self.edit_columns_dialog.show()
+
+    def on_add_columns_clicked(self):
+        column_name, confirm = QtWidgets.QInputDialog.getText(None, 'Add column', 'New column name:')
+        if not confirm:
+            return
+
+        full_column_name = (column_name, '') + ('',) * (self.shots_model.nlevels - 2)
+        if full_column_name in self.shots_model.dataframe.columns:
+            err_msg = 'Proposed new column {} already in the dataframe.'.format(column_name)
+            QtWidgets.QMessageBox.warning(None, 'Unable to add column', err_msg)
+            return
+
+        self.shots_model.dataframe[full_column_name] = ''
+        columns_visible = self.shots_model.columns_visible.copy()
+        new_column_idx = self.shots_model._model.columnCount()
+        self.shots_model._model.insertColumns(new_column_idx, 1)
+        # Set the header label of the new column:
+        self.shots_model.column_names[new_column_idx] = full_column_name
+        self.shots_model.column_indices[full_column_name] = new_column_idx
+        # new columns are visible by default:
+        self.shots_model.columns_visible[new_column_idx] = True
+        column_name_as_string = '\n'.join(full_column_name).strip()
+        header_item = QtGui.QStandardItem(column_name_as_string)
+        header_item.setToolTip(column_name_as_string)
+        self.shots_model._model.setHorizontalHeaderItem(new_column_idx, header_item)
 
     def on_columns_changed(self):
         column_names = self.shots_model.column_names
