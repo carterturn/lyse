@@ -1197,6 +1197,12 @@ class UneditableModel(QtGui.QStandardItemModel):
         result = QtGui.QStandardItemModel.flags(self, index)
         return result & ~QtCore.Qt.ItemIsEditable
 
+class AlwaysEditableModel(QtGui.QStandardItemModel):
+
+    def flags(self, index):
+        """Return flags as normal except that the ItemIsEditable
+        flag is always True"""
+        return QtGui.QStandardItemModel.flags(self, index) | QtCore.Qt.ItemIsEditable
 
 class TableView(QtWidgets.QTableView):
     leftClicked = Signal(QtCore.QModelIndex)
@@ -1261,7 +1267,7 @@ class DataFrameModel(QtCore.QObject):
         QtCore.QObject.__init__(self)
         self._view = view
         self.exp_config = exp_config
-        self._model = UneditableModel()
+        self._model = AlwaysEditableModel()
         self.row_number_by_filepath = {}
         self._previous_n_digits = 0
 
@@ -1283,7 +1289,6 @@ class DataFrameModel(QtCore.QObject):
         self._view.setVerticalHeader(self._vertheader)
         self._delegate = ItemDelegate(self._view, self._model, self.COL_STATUS, self.ROLE_STATUS_PERCENT)
         self._view.setItemDelegate(self._delegate)
-        self._view.setSelectionBehavior(QtWidgets.QTableView.SelectRows)
         self._view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
         # Check if integer indexing is to be used
@@ -1329,6 +1334,8 @@ class DataFrameModel(QtCore.QObject):
         self._view.customContextMenuRequested.connect(self.on_view_context_menu_requested)
         self.action_remove_selected.triggered.connect(self.on_remove_selection)
 
+        self._model.itemChanged.connect(self.on_model_item_changed)
+
     def on_remove_selection(self):
         self.remove_selection()
 
@@ -1348,6 +1355,19 @@ class DataFrameModel(QtCore.QObject):
             row = name_item.row()
             self._model.removeRow(row)
         self.renumber_rows()
+
+    def on_model_item_changed(self, item):
+        if item.column() == self.COL_STATUS or item.column() == self.COL_FILEPATH:
+            return # Do not edit status or filepath
+        new_value = item.text()
+
+        filepath_colname = ('filepath',) + ('',) * (self.nlevels - 1)
+        filepath = self.dataframe.at[item.row(), filepath_colname]
+
+        column_name = self.column_names[item.column()]
+        updated_row_data = {(column_name[0], column_name[1]): new_value}
+
+        self.update_row(filepath, updated_row_data=updated_row_data)
 
     def mark_selection_not_done(self):
         selected_indexes = self._view.selectedIndexes()
