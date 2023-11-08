@@ -314,30 +314,7 @@ class AnalysisRoutine(object):
         self.exiting = False
 
     def setup_globals_entry(self):
-        routine_globals = {}
-
-        # Load globals from script into dictionary
-        with open(self.filepath, 'r') as script_file:
-            script = script_file.read()
-            script_tree = ast.parse(script)
-            setup_globals_func = None
-            for func in [f for f in script_tree.body if isinstance(f, ast.FunctionDef)]:
-                if func.name == 'SETUP_GLOBALS':
-                    setup_globals_func = func
-            if setup_globals_func is not None:
-                try:
-                    setup_globals_script = ast.unparse(setup_globals_func) + '\nSETUP_GLOBALS()'
-                    setup_globals_code = compile(setup_globals_script, self.filepath, 'exec')
-                    exec(setup_globals_code, routine_globals)
-                except Exception:
-                    app.output_box.output('Unable to execute SETUP_GLOBALS for \n'%self.shortname, red=True)
-        # Don't load "private" variables (or builtins)
-        rm_keys = ['SETUP_GLOBALS']
-        for key in routine_globals.keys():
-            if key.startswith('_'):
-                rm_keys.append(key)
-        for key in rm_keys:
-            routine_globals.pop(key)
+        routine_globals = self.get_globals()
 
         # Populate globals model
         self.file_name_item = QtGui.QStandardItem(self.shortname)
@@ -503,6 +480,23 @@ class AnalysisRoutine(object):
             app.output_box.output('%s worker restarted\n'%self.shortname)
         self.exiting = False
 
+class AnalysisRoutinePy(AnalysisRoutine):
+
+    def __init__(self, filepath, model, output_box_port, globals_model=None, checked=QtCore.Qt.Checked):
+        super().__init__(filepath, model, output_box_port, globals_model=None, checked=QtCore.Qt.Checked)
+
+    def get_globals(self):
+        _, globals = script_parser.parse_py(self.fileath)
+        return globals
+
+class AnalysisRoutineIpynb(AnalysisRoutine):
+
+    def __init__(self, filepath, model, output_box_port, globals_model=None, checked=QtCore.Qt.Checked):
+        super().__init__(filepath, model, output_box_port, globals_model=None, checked=QtCore.Qt.Checked)
+
+    def get_globals(self):
+        _, globals = script_parser.parse_ipynb(self.filepath)
+        return globals
 
 class TreeView(QtWidgets.QTreeView):
     leftClicked = Signal(QtCore.QModelIndex)
@@ -689,7 +683,14 @@ class RoutineBox(object):
             if filepath in [routine.filepath for routine in self.routines]:
                 app.output_box.output('Warning: Ignoring duplicate analysis routine %s\n'%filepath, red=True)
                 continue
-            routine = AnalysisRoutine(filepath, self.model, self.output_box_port, self.globals_model, checked)
+            _, ext = os.path.splitext(filepath)
+            if ext == '.py':
+                routine = AnalysisRoutinePy(filepath, self.model, self.output_box_port, self.globals_model, checked)
+            elif ext == '.ipynb':
+                routine = AnalysisRoutineIpynb(filepath, self.model, self.output_box_port, self.globals_model, checked)
+            else:
+                app.output_box.output('Warning: file extension {} not recognized'.format(ext))
+                continue
             self.routines.append(routine)
         self.update_select_all_checkstate()
         

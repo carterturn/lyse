@@ -317,6 +317,11 @@ class AnalysisWorker(object):
             with self.modulewatcher.lock:
                 # Actually run the user's analysis!
                 with open(self.filepath) as f:
+                    if self.filepath.endswith('.ipynb'):
+                        code, _ = script_parser.parse_ipynb(self.filepath)
+                    if self.filepath.endswith('.ipynb'):
+                        code, _ = script_parser.parse_ipynb(self.filepath)
+
                     code = compile(
                         f.read(),
                         self.routine_module.__file__,
