@@ -24,10 +24,10 @@ def parse_ipynb(fname):
                         key = m.group(1)
                         val = m.group(2)
                         try:
-                            parameter_dict[key] = eval(val)
+                            globals[key] = eval(val)
                         except:
-                            parameter_dict[key] = val
-            
+                            globals[key] = val
+
     return code, globals
 
 def parse_py(fname):

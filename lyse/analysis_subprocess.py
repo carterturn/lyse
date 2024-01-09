@@ -34,6 +34,8 @@ import multiprocessing
 import desktop_app
 desktop_app.set_process_appid('lyse')
 
+from lyse import script_parser
+
 # This process is not fork-safe. Spawn fresh processes on platforms that would fork:
 if (
     hasattr(multiprocessing, 'get_start_method')
@@ -317,13 +319,13 @@ class AnalysisWorker(object):
             with self.modulewatcher.lock:
                 # Actually run the user's analysis!
                 with open(self.filepath) as f:
+                    if self.filepath.endswith('.py'):
+                        code_text, _ = script_parser.parse_py(self.filepath)
                     if self.filepath.endswith('.ipynb'):
-                        code, _ = script_parser.parse_ipynb(self.filepath)
-                    if self.filepath.endswith('.ipynb'):
-                        code, _ = script_parser.parse_ipynb(self.filepath)
+                        code_text, _ = script_parser.parse_ipynb(self.filepath)
 
                     code = compile(
-                        f.read(),
+                        code_text,
                         self.routine_module.__file__,
                         'exec',
                         dont_inherit=True,

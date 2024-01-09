@@ -54,7 +54,7 @@ from qtutils.qt.QtCore import pyqtSignal as Signal
 from qtutils import inmain_decorator, inmain, UiLoader, DisconnectContextManager
 from qtutils.auto_scroll_to_end import set_auto_scroll_to_end
 import qtutils.icons
-from lyse import LYSE_DIR, _rangeindex_to_multiindex
+from lyse import LYSE_DIR, _rangeindex_to_multiindex, script_parser
 
 process_tree = ProcessTree.instance()
 
@@ -483,7 +483,7 @@ class AnalysisRoutine(object):
 class AnalysisRoutinePy(AnalysisRoutine):
 
     def __init__(self, filepath, model, output_box_port, globals_model=None, checked=QtCore.Qt.Checked):
-        super().__init__(filepath, model, output_box_port, globals_model=None, checked=QtCore.Qt.Checked)
+        super().__init__(filepath, model, output_box_port, globals_model, QtCore.Qt.Checked)
 
     def get_globals(self):
         _, globals = script_parser.parse_py(self.fileath)
@@ -492,7 +492,7 @@ class AnalysisRoutinePy(AnalysisRoutine):
 class AnalysisRoutineIpynb(AnalysisRoutine):
 
     def __init__(self, filepath, model, output_box_port, globals_model=None, checked=QtCore.Qt.Checked):
-        super().__init__(filepath, model, output_box_port, globals_model=None, checked=QtCore.Qt.Checked)
+        super().__init__(filepath, model, output_box_port, globals_model, QtCore.Qt.Checked)
 
     def get_globals(self):
         _, globals = script_parser.parse_ipynb(self.filepath)
@@ -654,7 +654,7 @@ class RoutineBox(object):
         routine_files = QtWidgets.QFileDialog.getOpenFileNames(self.ui,
                                                            'Select analysis routines',
                                                            self.last_opened_routine_folder,
-                                                           "Python scripts (*.py)")
+                                                           "Python scripts (*.py);;Jupyter notebooks (*.ipynb)")
         if type(routine_files) is tuple:
             routine_files, _ = routine_files
 
